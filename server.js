@@ -1,75 +1,48 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const connection = require('./db'); // Assurez-vous que db.js est correctement configuré
+const path = require('path');
+const connection = require('./db'); // Votre configuration MySQL
 
 const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
-// Middleware
-app.use(cors()); // Permet les requêtes cross-origin
-app.use(bodyParser.json()); // Parse les corps des requêtes en JSON
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, 'dist')));
 
-// Endpoint pour ajouter un client
+// API routes
 app.post('/api/add-client', (req, res) => {
   const { firstName, lastName, address, email, phone } = req.body;
-
-  // Validation des champs requis
   if (!firstName || !lastName || !address || !email || !phone) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Tous les champs sont requis: firstName, lastName, address, email, phone.' 
-    });
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
   }
 
-  // Insertion dans la base de données
-  const query = `
-    INSERT INTO clients (first_name, last_name, address, email, phone) 
-    VALUES (?, ?, ?, ?, ?)
-  `;
-
+  const query = `INSERT INTO clients (first_name, last_name, address, email, phone) VALUES (?, ?, ?, ?, ?)`;
   connection.query(query, [firstName, lastName, address, email, phone], (err, result) => {
     if (err) {
-      console.error('Erreur lors de l\'insertion dans la base de données:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Erreur interne du serveur.' 
-      });
+      console.error('Erreur lors de l\'insertion :', err);
+      return res.status(500).json({ message: 'Erreur serveur.' });
     }
-
-    // Succès
-    res.status(201).json({ 
-      success: true, 
-      message: 'Client ajouté avec succès.', 
-      data: { id: result.insertId, firstName, lastName, address, email, phone } 
-    });
+    res.status(201).json({ message: 'Client ajouté avec succès.', id: result.insertId });
   });
 });
 
-// Endpoint pour récupérer tous les clients
 app.get('/api/clients', (req, res) => {
   const query = `SELECT * FROM clients`;
-
   connection.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur lors de la récupération des clients:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Erreur interne du serveur.' 
-      });
+      console.error('Erreur lors de la récupération :', err);
+      return res.status(500).json({ message: 'Erreur serveur.' });
     }
-
-    // Succès
-    res.status(200).json({ 
-      success: true, 
-      data: results 
-    });
+    res.status(200).json(results);
   });
 });
 
-// Configuration du port
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Serveur lancé sur le port ${PORT}`);
+// Serve frontend on all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-module.exports = app; // Nécessaire pour un déploiement avec Vercel
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
