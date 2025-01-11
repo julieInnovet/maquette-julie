@@ -2,12 +2,13 @@
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
-  "type": "common.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "start": "node server.js", 
     "start-backend": "node server.js"
   },
   "dependencies": {
